@@ -24,17 +24,17 @@ point rotate(point a){
 }
 bool upper(point a){
     if(a.S > 0)
-	return 1;
+        return 1;
     if(a.S < 0)
-	return 0;
+    	return 0;
     if(a.F > 0)
-	return 1;
+    	return 1;
     return 0;
 }
 bool cmp(point a, point b){
     if(upper(a) && !upper(b))
-	return true;
+    	return true;
     if(!upper(a) && upper(b))
-	return false;
+    	return false;
     return a * b > 0;
 }
