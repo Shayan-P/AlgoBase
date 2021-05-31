@@ -14,7 +14,7 @@ abstract public class ConvexHull {
     public void randomFill(int n, double lim){
         points = new CycleList<>();
         for(int i = 0; i < n; i++)
-            points.add(Vector.random(lim));
+            points.add(Vector.random2d(lim));
     }
 
     public static ConvexHull trivialMerge(ConvexHull hull1, ConvexHull hull2){

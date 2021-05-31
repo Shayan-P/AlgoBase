@@ -55,13 +55,16 @@ public class Visual extends Application {
             putTextUnderPoint(me, Integer.toString(i));
             putLine(me, nxt, Color.BLACK);
         }
-        for(int i = 0; i < 30; i++) {
-            Vector randomPoint = Vector.random(randomLen);
-            if(hull.checkStrictInside(randomPoint))
-                continue;
-            putPoint(randomPoint, Color.GREEN);
-            putLine(randomPoint, hull.getFistLineIntersection(randomPoint), Color.BLUE);
-            putLine(randomPoint, hull.getSecondLineIntersection(randomPoint), Color.BLUE);
+        for(int i = 0; i < 1000; i++) {
+            Vector randomPoint = Vector.random2d(randomLen);
+            if(hull.checkStrictInside(randomPoint)){
+                putPoint(randomPoint, Color.BROWN);
+            }
+            else {
+                putPoint(randomPoint, Color.GREEN);
+                putLine(randomPoint, hull.getFistLineIntersection(randomPoint), Color.BLUE);
+                putLine(randomPoint, hull.getSecondLineIntersection(randomPoint), Color.BLUE);
+            }
         }
 
         primaryStage.setScene(scene);
