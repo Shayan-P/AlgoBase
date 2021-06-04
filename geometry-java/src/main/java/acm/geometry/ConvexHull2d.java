@@ -1,15 +1,27 @@
 package acm.geometry;
 
-abstract public class ConvexHull {
+public class ConvexHull2d {
     CycleList<Vector> points;
 
-    ConvexHull(CycleList<Vector> points){
+    ConvexHull2d(CycleList<Vector> points){
         this.points = points;
     }
-    ConvexHull() {
+    ConvexHull2d() {
     }
 
-    abstract public void compute();
+    public void grahamScan(){
+        Vector first = points.stream().min(Vector.xFirstComparator).get();
+        points.remove(first);
+        points.sort((me, other) -> -Vector.sign2dCross(first, me, other));
+        CycleList<Vector> ret = new CycleList<>();
+        ret.add(first);
+        for(Vector p : points){
+            while (ret.size() >= 2 && Vector.sign2dCross(ret.getRel(-2), ret.getRel(-1), p) <= Utils.eps)
+                ret.popLast();
+            ret.add(p);
+        }
+        points = ret;
+    }
 
     public void randomFill(int n, double lim){
         points = new CycleList<>();
@@ -17,32 +29,32 @@ abstract public class ConvexHull {
             points.add(Vector.random2d(lim));
     }
 
-    public static ConvexHull trivialMerge(ConvexHull hull1, ConvexHull hull2){
+    public static ConvexHull2d trivialMerge(ConvexHull2d hull1, ConvexHull2d hull2){
         CycleList<Vector> points = new CycleList<>();
         points.addAll(hull1.points);
         points.addAll(hull2.points);
-        GrahamScan grahamScan = new GrahamScan(points);
-        grahamScan.compute();
-        return grahamScan;
+        ConvexHull2d newHull = new ConvexHull2d(points);
+        newHull.grahamScan();
+        return newHull;
     }
 
     public boolean trivialCheckStrictInside(Vector v){
         for(int i = 0; i < points.size(); i++){
-            if(Vector.signCross(v, points.get(i), points.getRel(i, 1)) <= 0)
+            if(Vector.sign2dCross(v, points.get(i), points.getRel(i, 1)) <= Utils.eps)
                 return false;
         }
         return true;
     }
 
     public int getPositionInTriangulation(int startPoint, Vector v){
-        if(Vector.signCross(points.getRel(startPoint, 0), points.getRel(startPoint, 1), v) < 0)
+        if(Vector.sign2dCross(points.getRel(startPoint, 0), points.getRel(startPoint, 1), v) < -Utils.eps)
             return points.getRelIndex(startPoint, 0);
-        if(Vector.signCross(points.getRel(startPoint, 0), points.getRel(startPoint, -1), v) > 0)
+        if(Vector.sign2dCross(points.getRel(startPoint, 0), points.getRel(startPoint, -1), v) > Utils.eps)
             return points.getRelIndex(startPoint, 0);
         int l = 0, r = points.size();
         while (r-l > 1){
             int mid = (l+r) >> 1;
-            if(Vector.signCross(points.get(startPoint), points.getRel(startPoint, mid), v) >= 0)
+            if(Vector.sign2dCross(points.get(startPoint), points.getRel(startPoint, mid), v) >= Utils.eps)
                 l = mid;
             else
                 r = mid;
@@ -54,13 +66,13 @@ abstract public class ConvexHull {
         int pos = getPositionInTriangulation(0, v);
         if(pos == 0)
             return false;
-        return Vector.signCross(points.get(pos), points.getRel(pos, 1), v) > 0;
+        return Vector.sign2dCross(points.get(pos), points.getRel(pos, 1), v) > Utils.eps;
     }
     public boolean checkStrictOutside(Vector v){
         int pos = getPositionInTriangulation(0, v);
         if(pos == 0)
             return true;
-        return Vector.signCross(points.get(pos), points.getRel(pos, 1), v) < 0;
+        return Vector.sign2dCross(points.get(pos), points.getRel(pos, 1), v) < -Utils.eps;
     }
 
     public Vector getFistLineIntersection(Vector v) {
@@ -69,9 +81,9 @@ abstract public class ConvexHull {
         while(r-l > 1){
             int mid = (l+r) >> 1;
             boolean check = true;
-            if(Vector.signCross(v, points.get(pos), points.getRel(pos, mid)) >= 0)
+            if(Vector.sign2dCross(v, points.get(pos), points.getRel(pos, mid)) >= -Utils.eps)
                 check = false;
-            if(Vector.signCross(v, points.getRel(pos, mid-1), points.getRel(pos, mid)) > 0)
+            if(Vector.sign2dCross(v, points.getRel(pos, mid-1), points.getRel(pos, mid)) > Utils.eps)
                 check = false;
             if(check)
                 l = mid;
@@ -87,9 +99,9 @@ abstract public class ConvexHull {
         while(r-l > 1){
             int mid = (l+r) >> 1;
             boolean check = true;
-            if(Vector.signCross(v, points.get(pos), points.getRel(pos, -mid)) <= 0)
+            if(Vector.sign2dCross(v, points.get(pos), points.getRel(pos, -mid)) <= Utils.eps)
                 check = false;
-            if(Vector.signCross(v, points.getRel(pos, -mid), points.getRel(pos, -mid+1)) > 0)
+            if(Vector.sign2dCross(v, points.getRel(pos, -mid), points.getRel(pos, -mid+1)) > Utils.eps)
                 check = false;
             if(check)
                 l = mid;

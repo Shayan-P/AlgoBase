@@ -9,7 +9,7 @@ import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-public class Visual extends Application {
+public class Visual2d extends Application {
     double width = 1000;
     double height = 1000;
     double randomLen = (width/2) - 100;
@@ -42,11 +42,11 @@ public class Visual extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        GrahamScan hull = new GrahamScan();
+        ConvexHull2d hull = new ConvexHull2d();
         hull.randomFill(30, randomLen);
         for(Vector v : hull.points)
             putPoint(v, Color.BLACK);
-        hull.compute();
+        hull.grahamScan();
 
         for(int i = 0; i < hull.points.size(); i++){
             Vector me = hull.points.get(i);

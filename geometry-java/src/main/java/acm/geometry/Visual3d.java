@@ -1,11 +1,13 @@
 package acm.geometry;
 
+import acm.geometry.camera.Camera;
+import acm.geometry.camera.SimpleSphereCamera;
+import acm.geometry.dcel.Face;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -19,45 +21,15 @@ import javafx.util.Pair;
 import java.util.*;
 
 public class Visual3d extends Application {
-    double cameraR = 100;
-    double cameraAlpha = 0;
-    double cameraTeta = 0;
-
     double width = 1000;
     double height = 1000;
     double randomLen = (width/2) - 100;
 
     Pane pane = new Pane();
     Scene scene = new Scene(pane, width, height);
-
+    Camera camera = new SimpleSphereCamera(scene, new Vector(6000,100,6000));
     List<Pair<Integer, Runnable>> renderingFunctions = new ArrayList<>();
     List<Pair<Integer, Node>> stackedNodes = new ArrayList<>();
-
-    private final HashSet<KeyCode> isPressed = new HashSet<>();
-
-    Vector getCameraVector(){
-        return new Vector(
-                cameraR * Math.sin(cameraAlpha) * Math.cos(cameraTeta),
-                cameraR * Math.sin(cameraAlpha) * Math.sin(cameraTeta),
-                cameraR * Math.cos(cameraAlpha)
-        );
-    }
-
-    Vector normalize(Vector v){
-        Vector camera = getCameraVector();
-        Vector yAxis = new Vector(
-                Math.cos(cameraAlpha) * Math.cos(cameraTeta),
-                Math.cos(cameraAlpha) * Math.sin(cameraTeta),
-                - Math.sin(cameraAlpha)
-        );
-        Vector xAxis = yAxis.cross(camera);
-        xAxis = xAxis.changeLen(1/xAxis.len());
-        double cof = (100 * 100) /(cameraR * cameraR);
-        return new Vector(
-                xAxis.dot(v) * cof + width/2,
-                -yAxis.dot(v) * cof + height/2,
-                0);
-    }
 
     public void refresh(){
         for(Pair<Integer, Runnable> pair : renderingFunctions) {
@@ -69,137 +41,144 @@ public class Visual3d extends Application {
         stackedNodes.sort(Comparator.comparingInt(Pair::getKey));
         stackedNodes.forEach(e->pane.getChildren().add(e.getValue()));
     }
-
     public void setFunction(int layerId, Runnable runnable){
         renderingFunctions.add(new Pair<>(layerId, runnable));
     }
 
-    void putTextUnderPoint(Vector v, String txt){
+    Text putTextUnderPoint(Vector v, String txt){
         Text text = new Text(txt);
-        stackedNodes.add(new Pair<>(3, text));
-        setFunction(3, ()->{
-            Vector newVec = normalize(v);
+        stackedNodes.add(new Pair<>(4, text));
+        setFunction(4, ()->{
+            Vector newVec = camera.translate(v);
             text.setX(newVec.x);
             text.setY(newVec.y - 10);
         });
+        return text;
     }
 
-    void putPoint(Vector v, Color color){
+    Circle putPoint(Vector v, Color color){
         Circle circle = new Circle(5, color);
-        stackedNodes.add(new Pair<>(2, circle));
-        setFunction(2, ()->{
-            Vector newVec = normalize(v);
+        stackedNodes.add(new Pair<>(3, circle));
+        setFunction(3, ()->{
+            Vector newVec = camera.translate(v);
             circle.setCenterX(newVec.x);
             circle.setCenterY(newVec.y);
         });
+        return circle;
     }
 
-    void putLine(Vector a, Vector b, Color color){
-        Line line = new Line(a.x, a.y, b.x, b.y);
+    Line putLine(Vector a, Vector b, Color color){
+        Line line = new Line();
         line.setStroke(color);
-        stackedNodes.add(new Pair<>(1, line));
-        setFunction(1, ()->{
-            Vector newA = normalize(a);
-            Vector newB = normalize(b);
+        stackedNodes.add(new Pair<>(2, line));
+        setFunction(2, ()->{
+            Vector newA = camera.translate(a);
+            Vector newB = camera.translate(b);
             line.setStartX(newA.x);
             line.setStartY(newA.y);
             line.setEndX(newB.x);
             line.setEndY(newB.y);
         });
+        return line;
     }
 
-    private void addPolygon(Color color, Vector... vertices){
+    Polygon putPolygon(Color color, boolean glass, Vector... vertices){
         Polygon poly = new Polygon();
         poly.setFill(color);
         stackedNodes.add(new Pair<>(0, poly));
-        setFunction(0, ()->{
+        setFunction(glass ? 0 : 1, ()->{
             poly.getPoints().clear();
             Arrays.stream(vertices).forEach(v->{
-                Vector newVector = normalize(v);
+                Vector newVector = camera.translate(v);
                 poly.getPoints().addAll(newVector.x, newVector.y);
             });
         });
+        return poly;
     }
 
-    private void setControllers(){
-        scene.setOnKeyPressed(e->{
-            isPressed.add(e.getCode());
+    Polygon putFace(Face face, Color color){
+        int sz = face.getVertices().size();
+        Vector[] vectors = new Vector[sz];
+        for(int i = 0; i < sz; i++)
+            vectors[i] = face.getVertices().get(i).getVector();
+
+        List<Node> nodes = new ArrayList<>();
+
+        for (int i = 0; i < sz; i++) {
+            Vector A = vectors[i];
+            Vector B = vectors[(i+1) % sz];
+            nodes.add(putLine(A, B, Color.BLACK));
+            nodes.add(putPoint(A, Color.RED));
+            nodes.add(putTextUnderPoint(A, face.getVertices().get(i).toString()));
+        }
+        Polygon polygon = putPolygon(color, false, vectors);
+        nodes.add(polygon);
+
+        setFunction(5, ()->{
+            nodes.forEach(node->node.setVisible(face.isVisibleFromOutsideByPlane(camera.getPosition(), camera.getDirection())));
+            if (face.isVisibleFromOutside(camera.getPosition()))
+                polygon.setFill(color);
+            else
+                polygon.setFill(Color.GREENYELLOW);
         });
-        scene.setOnKeyReleased(e->{
-            isPressed.remove(e.getCode());
-        });
-        Timeline tt = new Timeline(new KeyFrame(Duration.millis(50), e->{
-            if(isPressed.contains(KeyCode.UP)){
-                cameraAlpha += 0.06;
-                cameraAlpha = (cameraAlpha + Math.PI) % (Math.PI);
-            }
-            if(isPressed.contains(KeyCode.DOWN)){
-                cameraAlpha -= 0.06;
-                cameraAlpha = (cameraAlpha + Math.PI) % (Math.PI);
-            }
-            if(isPressed.contains(KeyCode.LEFT)){
-                cameraTeta -= 0.03;
-                cameraTeta = (cameraTeta + Math.PI * 2) % (Math.PI * 2);
-            }
-            if(isPressed.contains(KeyCode.RIGHT)){
-                cameraTeta += 0.03;
-                cameraTeta = (cameraTeta + Math.PI * 2) % (Math.PI * 2);
-            }
-            if(isPressed.contains(KeyCode.A)){
-                cameraR += 10;
-            }
-            if(isPressed.contains(KeyCode.B)){
-                cameraR -= 10;
-            }
-            refresh();
-        }));
-        tt.setCycleCount(Timeline.INDEFINITE);
-        tt.play();
+//        scene.setOnMouseClicked(e->{
+//            System.out.println("this is camera: " + camera.getPosition());
+//            System.out.println(face.dummy(camera.getPosition()));
+//        });
+        return polygon;
+    }
+
+    public void putConvexHull3d(ConvexHull3d hull3d){
+        List<Face> faces = hull3d.getFaces();
+        for (Face face : faces) {
+            putFace(face, Color.gray(0.4));
+        }
+    }
+
+    private ConvexHull3d getHull(){
+        CycleList<Vector> tmp = new CycleList<>();
+
+//        tmp.add(new Vector(-500, -500, -200));
+//        tmp.add(new Vector(500, -500, -200));
+//        tmp.add(new Vector(-500, 500, -200));
+//        tmp.add(new Vector(0, 0, 200));
+//        tmp.add(new Vector(0, 0, 0));
+//        tmp.add(new Vector(0, 0, 250));
+
+//        for(int i = 0; i < 100; i++){
+//            Random rnd = new Random();
+//            double alpha = rnd.nextDouble() * Math.PI;
+//            double teta = rnd.nextDouble() * Math.PI * 2;
+//            double r = 200;
+//            tmp.add(new Vector(
+//                    r * Math.sin(alpha) * Math.cos(teta),
+//                    r * Math.sin(alpha) * Math.sin(teta),
+//                    r * Math.cos(alpha)
+//            ));
+//        }
+//        ConvexHull3d hull3d = new ConvexHull3d(tmp);
+
+        ConvexHull3d hull3d = new ConvexHull3d();
+        hull3d.randomFill(100, randomLen);
+
+        hull3d.incrementalN2();
+//        hull3d.trivialN4();
+
+        System.out.println("Number of faces" + hull3d.getFaces().size());
+        System.out.println("Number of vertices" + hull3d.getVertices().size());
+
+        return hull3d;
     }
 
     @Override
     public void start(Stage primaryStage) {
-        GrahamScan hull = new GrahamScan();
-        hull.randomFill(30, randomLen);
-        for(Vector v : hull.points)
-            putPoint(v, Color.BLACK);
-        hull.compute();
-
-        for(int i = 0; i < hull.points.size(); i++){
-            Vector me = hull.points.get(i);
-            Vector nxt = hull.points.getRel(i, 1);
-            putPoint(me, Color.RED);
-            putTextUnderPoint(me, Integer.toString(i));
-            putLine(me, nxt, Color.BLACK);
-        }
-
-        for(int i = 0; i < 10; i++) {
-            Vector randomPoint = Vector.random2d(randomLen);
-            if(hull.checkStrictInside(randomPoint)){
-                putPoint(randomPoint, Color.BROWN);
-            }
-            else {
-                putPoint(randomPoint, Color.GREEN);
-                putLine(randomPoint, hull.getFistLineIntersection(randomPoint), Color.BLUE);
-                putLine(randomPoint, hull.getSecondLineIntersection(randomPoint), Color.BLUE);
-            }
-        }
-
-        Vector bef = null;
-        for(int i = 0; i < 30; i++){
-            Vector nw = Vector.random3d(randomLen);
-            if(bef != null)
-                putLine(bef, nw, Color.GRAY);
-            putPoint(nw, Color.PURPLE);
-            bef = nw;
-        }
-
-        addPolygon(Color.LIGHTBLUE, new Vector(-500, -500), new Vector(500, -500), new Vector(500, 500), new Vector(-500, 500));
-
+        putConvexHull3d(getHull());
         prepareLoop();
-
         refresh();
-        setControllers();
+
+        Timeline tt = new Timeline(new KeyFrame(Duration.millis(50), e->refresh()));
+        tt.setCycleCount(Timeline.INDEFINITE);
+        tt.play();
 
         primaryStage.setScene(scene);
         primaryStage.show();

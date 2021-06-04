@@ -5,12 +5,12 @@ import java.util.Random;
 
 public class Vector {
     double x, y, z;
-    Vector(double x, double y){
+    public Vector(double x, double y){
         this.x = x;
         this.y = y;
         this.z = 0;
     }
-    Vector(double x, double y, double z){
+    public Vector(double x, double y, double z){
         this.x = x;
         this.y = y;
         this.z = z;
@@ -22,7 +22,7 @@ public class Vector {
     public Vector neg(){
         return new Vector(-this.x, -this.y, -this.z);
     }
-    double dot(Vector v){
+    public double dot(Vector v){
         return this.x * v.x + this.y * v.y + this.z * v.z;
     }
     public Vector cross(Vector v){
@@ -37,10 +37,10 @@ public class Vector {
         return new Vector(this.x * cof, this.y * cof, this.z * cof);
     }
 
-    double len(){
+    public double len(){
         return Math.sqrt(dot(this));
     }
-    double len2(){
+    public double len2(){
         return dot(this);
     }
 
@@ -58,10 +58,20 @@ public class Vector {
 
     public static Comparator<Vector> xFirstComparator = Comparator.comparing(Vector::getX).thenComparing(Vector::getY);
 
-    public static int signCross(Vector a, Vector b, Vector c){
+    public void assign(Vector v){
+        x = v.x;
+        y = v.y;
+        z = v.z;
+    }
+
+    public static Vector triCross(Vector a, Vector b, Vector c){
         b = b.add(a.neg());
         c = c.add(a.neg());
-        double ret = b.cross(c).getZ();
+        return b.cross(c);
+    }
+
+    public static int sign2dCross(Vector a, Vector b, Vector c){
+        double ret = triCross(a, b, c).getZ();
         if(ret < 0)
             return -1;
         if(ret == 0)
