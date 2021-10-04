@@ -161,8 +161,8 @@ public class Visual3d extends Application {
         ConvexHull3d hull3d = new ConvexHull3d();
         hull3d.randomFill(100, randomLen);
 
-        hull3d.incrementalN2();
-//        hull3d.trivialN4();
+//        hull3d.incrementalN2();
+        hull3d.trivialN4();
 
         System.out.println("Number of faces" + hull3d.getFaces().size());
         System.out.println("Number of vertices" + hull3d.getVertices().size());
