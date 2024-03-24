@@ -1,0 +1,1 @@
+g++ $1 -Wall -Wextra --std=c++17 && ./a.out

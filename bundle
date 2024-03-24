@@ -1,0 +1,7 @@
+script_dir=$(dirname "$(realpath "$0")")
+
+if [ -n "$2" ]; then
+    python $script_dir/bundle.py --inp="$1" --out="$2"
+else
+    python $script_dir/bundle.py --inp="$1"
+fi
