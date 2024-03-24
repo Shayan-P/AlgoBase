@@ -43,29 +43,33 @@ def find_full_path(filename, from_path):
     raise Exception(f"{filename} not found within {from_path}")
 
 
-def get_included_files(text, from_path):
-    pattern = r'#include\s*"([^"]+)"'
-    matches = re.findall(pattern, text)
-    return re.sub(pattern, "", text), [find_full_path(match, from_path) for match in matches] 
+# def get_included_files(text, from_path):
+#     pattern = r'#include\s*"([^"]+)"'
+#     matches = re.findall(pattern, text)
+#     return re.sub(pattern, "", text), [find_full_path(match, from_path) for match in matches] 
 
 
 def recurse(filename, visited=set(), from_path=lib_path):
     visited.add(filename)
     res = ""
     with open(filename, 'r') as f:
-        text = f.read()
-        text, paths = get_included_files(text, from_path)
-        for path in paths:
-            pathname = path.split("/")[-1] 
-            if path not in visited:
-                res += f"""
+        for line in f.readlines():
+            pattern = r'#include\s*"([^"]+)"'
+            matches = re.findall(pattern, line)
+            assert len(matches) <= 1
+            if len(matches) == 0:
+                res += line
+            else:
+                path = find_full_path(matches[0], from_path)
+                pathname = path.split("/")[-1] 
+                if path not in visited:
+                    res += f"""
 // start {pathname}
 """
-                res += recurse(path, visited, os.path.dirname(path)) 
-                res += f"""
+                    res += recurse(path, visited, os.path.dirname(path)) 
+                    res += f"""
 // end {pathname}
 """
-        res += text
     return res
 
 
