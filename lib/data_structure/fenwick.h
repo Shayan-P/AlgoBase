@@ -10,8 +10,11 @@ namespace data_structure {
         FenwickTree(int _n): data(_n+1), n(_n) {}
 
         void add(int pos, T val) {
-            for(pos+= 1; pos <= n; pos+= (pos & -pos))
-                data[pos]+= val;
+            for(pos+= 1; pos <= n; pos+= (pos & -pos)) {
+                auto tmp = val;
+                tmp += data[pos];
+                data[pos] = tmp; // in order for this to handle Non Abelian Groups
+            }
         }
 
         T ask(int pos) {

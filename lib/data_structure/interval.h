@@ -1,8 +1,7 @@
 #pragma once
 
 namespace data_structure {
-
-    template<typename ValueType>
+    template<typename ValueType, typename ModifyType>
     class Interval {
         std::vector<ValueType> data;
         int n;
@@ -10,12 +9,12 @@ namespace data_structure {
     public:
         Interval(int _n): n(_n), data(_n) {}
 
-        inline void add(int pos, ValueType val) {
-            data[pos]+= val;
+        inline void add(int pos, ModifyType mod) {
+            data[pos]+= mod;
         }
-        inline void add(int f, int s, ValueType val) {
+        inline void add(int f, int s, ModifyType mod) {
             while(f < s)
-                data[f++]+= val;
+                data[f++]+= mod;
         }
         inline void set(int pos, ValueType val) {
             data[pos] = val;

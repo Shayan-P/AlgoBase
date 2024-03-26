@@ -185,4 +185,103 @@ namespace data_structure {
             _print(mid, r, 2*id+1);
         }
     };
+
+
+
+    template<typename ValueType, typename ModifierType>
+    class SegmentTreeGenericModification {
+    protected:
+        std::vector<ValueType> data;
+        std::vector<ModifierType> lazy;
+
+        int n;
+
+    public:
+        SegmentTreeGenericModification(int _n): n(_n), data(4 * _n), lazy(4 * _n) {}
+
+        inline void add(int pos, ModifierType val) { _add(pos, val, 0, n, 1); }
+        inline void add(int f, int s, ModifierType val) { if(f >= s) return; _add(f, s, val, 0, n, 1); }
+        inline void set(int pos, ValueType val) { _set(pos, val, 0, n, 1); }
+        inline ValueType ask(int f, int s) { if(f >= s) return ValueType(); return _ask(f, s, 0, n, 1); }
+        inline void print() { _print(0, n, 1); }
+
+    protected:
+        void _add(int pos, ModifierType md, int l, int r, int id) {
+            push_down(l, r, id);
+            if(r-l == 1) {
+                data[id] += md;
+                return;
+            }
+            int mid = (l+r)>>1;
+            if(pos < mid)
+                _add(pos, md, l, mid, 2*id), push_down(mid, r, 2*id+1);
+            else
+                _add(pos, md, mid, r, 2*id+1), push_down(l, mid, 2*id);
+            data[id] = data[2 * id];
+            data[id] += data[2*id+1];
+        }
+
+        void _set(int pos, ValueType val, int l, int r, int id) {
+            push_down(l, r, id);
+            if(r-l == 1) {
+                data[id] = val;
+                return;
+            }
+            int mid = (l+r)>>1;
+            if(pos < mid)
+                _set(pos, val, l, mid, 2*id), push_down(mid, r, 2*id+1);
+            else
+                _set(pos, val, mid, r, 2*id+1), push_down(l, mid, 2*id);
+            data[id] = data[2 * id];
+            data[id] += data[2*id+1];
+        }
+
+        void _add(int f, int s, ModifierType md, int l, int r, int id) { // [f, s)
+            push_down(l, r, id);
+            int mid = (l+r)>>1;
+            if(f <= l && r <= s) {
+                lazy[id]+= md;
+                push_down(l, r, id);
+                return;
+            }
+            if(l < s && f < r) {
+                _add(f, s, md, l, mid, 2*id);
+                _add(f, s, md, mid, r, 2*id+1);
+                // merge
+                data[id] = data[2 * id];
+                data[id] += data[2*id+1];
+            }
+        }
+
+        ValueType _ask(int f, int s, int l, int r, int id) { // [f, s)
+            push_down(l, r, id);
+            if(f <= l && r <= s) {
+                return data[id];
+            }
+            int mid = (l+r)>>1;
+            if(mid <= f) return _ask(f, s, mid, r, 2*id+1);
+            if(s <= mid) return _ask(f, s, l, mid, 2*id);
+            ValueType res = _ask(f, s, l, mid, 2*id);
+            res += _ask(f, s, mid, r, 2*id+1);
+            return res;
+        }
+
+        void push_down(int l, int r, int id) {
+            if(r-l > 1) {
+                lazy[2*id] += lazy[id];
+                lazy[2*id+1] += lazy[id];
+            }
+            sum_aggregate(data[id], lazy[id], r-l);
+            lazy[id].reset();
+        }
+
+        void _print(int l, int r, int id) {
+            cout << "l=" << l << ", r=" << r << ", id=" << id << ", data=" << data[id] << ", lazy[id]=" << lazy[id] << endl;
+            if(r-l <= 1)
+                return;
+            int mid = (l+r)>>1;
+            _print(l, mid, 2*id);
+            _print(mid, r, 2*id+1);
+        }
+    };
 }

@@ -6,7 +6,7 @@
 template<typename T>
 void test_for_group(int n, int q) {
     data_structure::FenwickTree<T> fen(n);
-    data_structure::Interval<T> interval(n);
+    data_structure::Interval<T, T> interval(n);
 
     while(q--) {
         int t = rand() % 2;

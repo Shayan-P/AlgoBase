@@ -3,10 +3,11 @@
 #include "AlgoBase/data_structure/interval.h"
 #include "AlgoBase/data_structure/groups.h"
 
-template<typename T>
+
+template<typename T, template<typename> class G1, template<typename> class G2>
 void test_for_group(int n, int q) {
-    data_structure::SegmentTreeAbstract<T> segment(n);
-    data_structure::Interval<T, T> interval(n);
+    data_structure::SegmentTreeGenericModification<G1<T>, data_structure::WithSet<T, G2>> segment(n);
+    data_structure::Interval<G1<T>, G2<T>> interval(n);
 
     while(q--) {
         int t = rand() % 5;
@@ -15,17 +16,21 @@ void test_for_group(int n, int q) {
         if(l > r)
             swap(l, r);
         int pos = rand() % n;
-        T val = rand();
+        T val = rand() % 2;
+        // data_structure::WithSet<T, G2> set_val(G2<T>(val));
+        // data_structure::WithSet<T, G2> opp_val(std::optional<T>(val));
+        data_structure::WithSet<T, G2> opp_val = data_structure::WithSet<T, G2>::fromOpp(G2<T>(val));
+        data_structure::WithSet<T, G2> set_val = data_structure::WithSet<T, G2>::fromSet(val);
 
         if(t == 0) {
-            segment.add(pos, val);
+            segment.add(pos, opp_val);
             interval.add(pos, val);
-            // cout << "add pos " << pos << " " << val.val << endl;
+            // cout << "add pos " << pos << " " << val << endl;
         }
         if(t == 1) {
-            segment.add(l, r, val);
+            segment.add(l, r, opp_val);
             interval.add(l, r, val);
-            // cout << "add interval " << l << " " << r << " " << val.val << endl;
+            // cout << "add interval " << l << " " << r << " " << val << endl;
         }
         if(t == 2) {
             auto seg_val = segment.ask(l, r).val;
@@ -41,11 +46,13 @@ void test_for_group(int n, int q) {
             assert(seg_val == int_val);
         }
         if(t == 3) {
-            segment.set(pos, val);
+            // cout << "set pos " << pos << " " << val << endl;
+            segment.add(pos, set_val);
             interval.set(pos, val);
         }
         if(t == 4) {
-            segment.set(l, r, val);
+            // cout << "set segment " << l << " " << r << " " << val << endl;
+            segment.add(l, r, set_val);
             interval.set(l, r, val);
         }
 
@@ -55,16 +62,16 @@ void test_for_group(int n, int q) {
         // interval.print();
         // assert(segment.ask(0, n).val == interval.ask(0, n).val);
     }
-    std::cout << typeid(T).name() << " : " << "passed!" << std::endl;
+    std::cout << typeid(data_structure::SegmentTreeGenericModification<G1<T>, data_structure::WithSet<T, G2>>).name() << " : " << "passed!" << std::endl;
 }
 
 int main() {
     ios_base::sync_with_stdio(0), cin.tie(0), cout.tie(0);
 
-    int n = 100;
+    int n = 4;
     int q = 100000;
 
-    test_for_group<data_structure::SumGroup<ll>>(n, q);
-    test_for_group<data_structure::MaxGroup<ll>>(n, q);
-    test_for_group<data_structure::MinGroup<ll>>(n, q);
+    test_for_group<ll, data_structure::SumGroup, data_structure::SumGroup>(n, q);
+    test_for_group<ll, data_structure::MinGroup, data_structure::SumGroup>(n, q);
+    test_for_group<ll, data_structure::MaxGroup, data_structure::MaxGroup>(n, q);
 }
