@@ -21,7 +21,7 @@ if [ -d "$directory" ]; then
         files_to_process=("$directory"/*.cpp)
     fi
 
-    for file in $files_to_process; do
+    for file in ${files_to_process[@]}; do
         if [[ -f "$file" && "$file" == *.cpp ]]; then
             echo "running $file"
             $script_dir/run $file

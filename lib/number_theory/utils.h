@@ -1,3 +1,5 @@
+#pragma once
+
 namespace number_theory {
     template<int mod>
     int binpow(int a, int b){
